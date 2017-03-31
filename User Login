@@ -1,0 +1,225 @@
+package com.company.secure.selenium.tests;
+
+import static com.company.secure.utils.common.StringUtils.BASE_URL;
+import static com.company.secure.utils.common.StringUtils.CSS_EMAIL_EMPTY_MSG;
+import static com.company.secure.utils.common.StringUtils.CSS_PASSWORD_EMPTY_MSG;
+import static com.company.secure.utils.common.StringUtils.ERR_CONTAINER_NOT_VISIBLE;
+import static com.company.secure.utils.common.StringUtils.ERR_EMAIL_EMPTY;
+import static com.company.secure.utils.common.StringUtils.ERR_PASSWORD_EMPTY;
+import static com.company.secure.utils.common.StringUtils.ERR_TITLE_OF_LOADED_PAGE_IS_NOT_AS_EXPECTED;
+import static com.company.secure.utils.common.StringUtils.ID_EMAIL;
+import static com.company.secure.utils.common.StringUtils.ID_PASSWORD;
+import static com.company.secure.utils.common.StringUtils.INVALID_PASSWORD_1;
+import static com.company.secure.utils.common.StringUtils.LONG_VALID_EMAIL_USER_2;
+import static com.company.secure.utils.common.StringUtils.LONG_VALID_EMAIL_USER_2_PASSWORD;
+import static com.company.secure.utils.common.StringUtils.MSG_HOME_PAGE_TITLE;
+import static com.company.secure.utils.common.StringUtils.MSG_MY_ZEN_MATE_ACCOUNT_TEXT;
+import static com.company.secure.utils.common.StringUtils.MSG_WELCOME_BACK_TEXT_PAGE;
+import static com.company.secure.utils.common.StringUtils.NONEXISTING_EMAIL_ID_1;
+import static com.company.secure.utils.common.StringUtils.SMALL_PASSWORD_1;
+import static com.company.secure.utils.common.StringUtils.VALID_EMAIL_USER_1;
+import static com.company.secure.utils.common.StringUtils.VALID_EMAIL_USER_1_MIXEDCASE;
+import static com.company.secure.utils.common.StringUtils.VALID_EMAIL_USER_2;
+import static com.company.secure.utils.common.StringUtils.VALID_PASSWORD_1;
+import static com.company.secure.utils.common.StringUtils.BUTTON_CLASS;
+import static com.company.secure.utils.common.StringUtils.CREATE_ACCOUNT_CLASS;
+import static com.company.secure.utils.common.StringUtils.ALERT_FAILURE_CLASS;
+import static com.company.secure.utils.common.StringUtils.TEXT_LOGOUT;
+import static com.company.secure.utils.common.StringUtils.CLASS_MY_COMPANY_ACCOUNT;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
+
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebDriverException;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.firefox.FirefoxDriver;
+import org.testng.Assert;
+import org.testng.annotations.AfterTest;
+import org.testng.annotations.BeforeTest;
+import org.testng.annotations.Parameters;
+import org.testng.annotations.Test;
+
+import com.company.secure.utils.common.SeleniumUtils;
+
+/**
+ * Test for checking user login to company website. Checks both positive and
+ * negative scenarios for the same.
+ * Version:1.0
+ * @author saritharajagopal
+ *
+ */
+public class UserLogin {
+
+    /**
+     * Checks user login for negative scenarios. Uses internally
+     * {@link com.company.secure.utils.common.StringUtils}
+     * @throws IOException 
+     * @throws SecurityException 
+     */
+    @Test(description = "Tests negative user login scenarios")
+    public void invalidLoginTest() throws SecurityException, IOException {
+	driver.get(BASE_URL);
+	Assert.assertEquals(driver.getTitle(), MSG_HOME_PAGE_TITLE, ERR_TITLE_OF_LOADED_PAGE_IS_NOT_AS_EXPECTED);
+	Logger logger = Logger.getLogger("MyLog");
+	SeleniumUtils.loggingInfo(driver, logger,"/Users/saritharajagopal/Desktop/Screenshots/TestLog.log");
+	SeleniumUtils.findClickableElementByLinkTextWithWait(driver, "LOG IN").click();
+	
+	HashMap<String, String> invalid = createInvalidMap();
+
+	WebElement email = SeleniumUtils.findPresenceofElementByIdWithWait(driver, ID_EMAIL);
+	WebElement pass = SeleniumUtils.findPresenceofElementByIdWithWait(driver, ID_PASSWORD);
+
+	Iterator<String> keySetIteratorinvalid = invalid.keySet().iterator();
+
+	while (keySetIteratorinvalid.hasNext()) {
+	    email.clear();
+	    pass.clear();
+
+	    String key = keySetIteratorinvalid.next();
+	    String value = invalid.get(key);
+
+	    email.sendKeys(key);
+	    pass.sendKeys(value);
+	    SeleniumUtils.findElementByClassName(driver, BUTTON_CLASS).click();
+	    String firstLineWelcome = SeleniumUtils.findElementByClassName(driver, CREATE_ACCOUNT_CLASS).getText();
+	    Assert.assertEquals(firstLineWelcome, MSG_WELCOME_BACK_TEXT_PAGE);
+	    logger.info("UserLogin::invalidLoginTest::Testing username: " + key + " password:" + value);
+	    if (!key.isEmpty() && !value.isEmpty()) {
+		
+		WebElement errorContainer = SeleniumUtils.findPresentElementByClassNameWithWait(driver, ALERT_FAILURE_CLASS);
+		Assert.assertTrue(errorContainer.isDisplayed(), ERR_CONTAINER_NOT_VISIBLE);
+	    } else if (value.isEmpty() && !key.isEmpty()) {
+		WebElement errorTextPassword = SeleniumUtils.findPresentElementByCssWithWait(driver,
+			CSS_PASSWORD_EMPTY_MSG);
+		Assert.assertTrue(errorTextPassword.isDisplayed(), ERR_PASSWORD_EMPTY);
+	    } else if (!value.isEmpty() && key.isEmpty()) {
+		WebElement errorTextEmail = SeleniumUtils.findPresentElementByCssWithWait(driver, CSS_EMAIL_EMPTY_MSG);
+		Assert.assertTrue(errorTextEmail.isDisplayed(), ERR_EMAIL_EMPTY);
+
+		email.clear();
+		pass.clear();
+
+		email.sendKeys("");
+		pass.sendKeys("");
+		SeleniumUtils.findElementByClassName(driver, BUTTON_CLASS).click();
+		firstLineWelcome = SeleniumUtils.findElementByClassName(driver, CREATE_ACCOUNT_CLASS).getText();
+		Assert.assertEquals(firstLineWelcome, MSG_WELCOME_BACK_TEXT_PAGE);
+		logger.info("UserLogin::invalidLoginTest::Testing username: " + "" + " password:" + "");
+		WebElement errorTextPassword = SeleniumUtils.findPresentElementByCssWithWait(driver,
+			CSS_PASSWORD_EMPTY_MSG);
+		errorTextEmail = SeleniumUtils.findPresentElementByCssWithWait(driver, CSS_EMAIL_EMPTY_MSG);
+		Assert.assertTrue(errorTextPassword.isDisplayed(), ERR_PASSWORD_EMPTY);
+		Assert.assertTrue(errorTextEmail.isDisplayed(), ERR_EMAIL_EMPTY);
+	    }
+	}
+    }
+
+    /**
+     * Checks user login for positive scenarios. Uses internally
+     * {@link com.company.secure.utils.common.StringUtils}
+     * @throws IOException 
+     * @throws SecurityException 
+     */
+    @Test(description = "Tests positive user login scenarios")
+    public void validLoginTest() throws SecurityException, IOException {
+	driver.get(BASE_URL);
+	Assert.assertEquals(driver.getTitle(), MSG_HOME_PAGE_TITLE, ERR_TITLE_OF_LOADED_PAGE_IS_NOT_AS_EXPECTED);
+	Logger logger = Logger.getLogger("MyLog");
+	SeleniumUtils.loggingInfo(driver, logger,"/Users/saritharajagopal/Desktop/Screenshots/TestLog.log");
+	HashMap<String, String> valid = createValidMap();
+	Iterator<String> keySetIteratorvalid = valid.keySet().iterator();
+
+	while (keySetIteratorvalid.hasNext()) {
+	    String key = keySetIteratorvalid.next();
+	    String value = valid.get(key);
+
+	    WebElement email = SeleniumUtils.findPresenceofElementByIdWithWait(driver, ID_EMAIL);
+	    WebElement pass = SeleniumUtils.findPresenceofElementByIdWithWait(driver, ID_PASSWORD);
+
+	    email.sendKeys(key);
+	    pass.sendKeys(value);
+
+	    logger.info("UserLogin::validLoginTest::Testing username: " + key + " password:" + value);
+
+	    SeleniumUtils.findElementByClassName(driver, BUTTON_CLASS).click();
+	    String dynamicElement = SeleniumUtils.findPresentElementByClassNameWithWait(driver,CLASS_MY_COMPANY_ACCOUNT).getText();
+	    Assert.assertEquals(dynamicElement, MSG_MY_ZEN_MATE_ACCOUNT_TEXT);
+	    SeleniumUtils.findClickableElementByLinkTextWithWait(driver, key.toLowerCase()).click();
+	    SeleniumUtils.findClickableElementByLinkTextWithWait(driver, TEXT_LOGOUT).click();
+	    String firstLineWelcome = SeleniumUtils.findElementByClassName(driver, CREATE_ACCOUNT_CLASS).getText();
+	    Assert.assertEquals(firstLineWelcome, MSG_WELCOME_BACK_TEXT_PAGE);
+	}
+    }
+
+    private HashMap<String, String> createInvalidMap() {
+	HashMap<String, String> invalid = new HashMap<String, String>();
+	invalid.put(VALID_EMAIL_USER_1, INVALID_PASSWORD_1);
+	invalid.put(VALID_EMAIL_USER_1, SMALL_PASSWORD_1);
+	invalid.put(NONEXISTING_EMAIL_ID_1, VALID_PASSWORD_1);
+	invalid.put(VALID_EMAIL_USER_2, "");
+	invalid.put("", VALID_PASSWORD_1);
+	
+	return invalid;
+    }
+
+    private HashMap<String, String> createValidMap() {
+	HashMap<String, String> valid = new HashMap<String, String>();
+	valid.put(VALID_EMAIL_USER_1, VALID_PASSWORD_1);
+	valid.put(VALID_EMAIL_USER_1_MIXEDCASE, VALID_PASSWORD_1);
+	valid.put(LONG_VALID_EMAIL_USER_2, LONG_VALID_EMAIL_USER_2_PASSWORD);
+	return valid;
+    }
+
+    WebDriver driver;
+    @BeforeTest(description = "Navigates to company website")
+    public void setup() {
+  	driver = new FirefoxDriver();
+  	driver.manage().window().maximize();
+    }
+
+   //@Parameters({ "browser" })
+ /*  @BeforeTest(description = "Navigates to company website")
+   
+   public void setup() {
+       String browsers[]={"Firefox","Chrome"};
+       for(String browser:browsers){
+       SeleniumUtils.browserCompatible(driver, browser);
+       }
+   }*/
+   /*public void setup(String browser) throws Exception {
+		try {
+		if (browser.equalsIgnoreCase("Firefox")) {
+			driver = new FirefoxDriver();
+			driver.manage().window().maximize();
+		} 
+		   
+		else if (browser.equalsIgnoreCase("Chrome"))
+		{	
+		    	System.setProperty("webdriver.chrome.driver","/Applications/selenium/chromedriver");
+			driver =  new ChromeDriver();
+			driver.manage().window().maximize();
+		} 
+		else{
+		    
+	            //If no browser passed throw exception
+		    	throw new Exception("Browser is not correct");
+	 
+	        }
+		driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+		    } 
+		catch (WebDriverException e) {
+		System.out.println(e.getMessage());
+	}
+}	
+  */
+
+    @AfterTest(description = "Closes the browser")
+    public void teardown() {
+	driver.quit();
+    }
+}
